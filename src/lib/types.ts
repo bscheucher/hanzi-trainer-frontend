@@ -7,6 +7,8 @@ export interface ProblemDetail {
   status: number;
   detail?: string;
   instance?: string;
+  /** Per-item validation errors, e.g. from word confirmation (index into the request's items). */
+  errors?: { index: number; message: string }[];
 }
 
 export interface CedictEntryDto {
@@ -51,8 +53,8 @@ export interface PageDto {
   pageNo: number | null;
   status: ExtractionStatus;
   extraction: ExtractionResult | null;
-  /** Filled from the vocabulary review milestone on (spec 06). */
-  candidates: unknown[] | null;
+  /** Review candidates (spec 06); only in GET /pages/{id} of a DONE page. */
+  candidates: CandidateDto[] | null;
   confirmed: boolean;
   errorMessage: string | null;
   createdAt: string;
@@ -92,4 +94,64 @@ export interface WordDto {
   meaningDe: string | null;
   partOfSpeech: string | null;
   verified: boolean;
+}
+
+export type CedictStatus = "MATCH" | "PINYIN_MISMATCH" | "NOT_FOUND";
+
+export interface CedictReading {
+  pinyin: string;
+  pinyinNumbered: string;
+  definitions: string[];
+}
+
+export interface CandidateDto {
+  /** Position in extraction.words. */
+  index: number;
+  hanzi: string;
+  /** Canonical display pinyin; on MATCH the CC-CEDICT reading. */
+  pinyin: string;
+  /** Null when the pinyin could not be parsed (see pinyinError). */
+  pinyinNumbered: string | null;
+  meaningEn: string | null;
+  meaningDe: string | null;
+  partOfSpeech: string | null;
+  exampleSentence: string | null;
+  confidence: number;
+  pinyinFromPage: boolean;
+  cedictStatus: CedictStatus;
+  cedictReadings: CedictReading[];
+  pinyinError: string | null;
+  existingWordId: number | null;
+  alreadyInLesson: boolean;
+}
+
+/** GET /dictionary/check — the same normalisation and comparison confirmation applies. */
+export interface ReadingCheckDto {
+  pinyin: string;
+  pinyinNumbered: string | null;
+  cedictStatus: CedictStatus;
+  cedictReadings: CedictReading[];
+  error: string | null;
+}
+
+export interface ConfirmItem {
+  hanzi: string;
+  pinyin: string;
+  meaningEn: string;
+  meaningDe?: string;
+  partOfSpeech?: string;
+  exampleSentence?: string;
+  acceptMismatch: boolean;
+}
+
+export interface ConfirmRequest {
+  sourcePageId?: number;
+  items: ConfirmItem[];
+}
+
+export interface ConfirmResult {
+  created: number;
+  reused: number;
+  linked: number;
+  words: WordDto[];
 }

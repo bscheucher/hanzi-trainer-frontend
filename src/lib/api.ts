@@ -1,8 +1,11 @@
 import type {
+  ConfirmRequest,
+  ConfirmResult,
   LessonDetailDto,
   LessonSummaryDto,
   PageDto,
   ProblemDetail,
+  ReadingCheckDto,
   TextbookDto,
 } from "./types";
 
@@ -70,6 +73,14 @@ export const rerunExtraction = (id: number) => apiFetch<PageDto>(`/pages/${id}/e
 export const deletePage = (id: number) => apiFetch<void>(`/pages/${id}`, { method: "DELETE" });
 
 export const pageImageUrl = (id: number) => `${API_BASE_URL}/api/pages/${id}/image`;
+
+// ------------------------------------------------------------------ vocabulary review
+
+export const checkReading = (hanzi: string, pinyin: string) =>
+  apiFetch<ReadingCheckDto>(`/dictionary/check?${new URLSearchParams({ hanzi, pinyin })}`);
+
+export const confirmWords = (lessonId: number, body: ConfirmRequest) =>
+  apiFetch<ConfirmResult>(`/lessons/${lessonId}/words/confirm`, jsonBody("POST", body));
 
 function jsonBody(method: string, body: unknown): RequestInit {
   return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
