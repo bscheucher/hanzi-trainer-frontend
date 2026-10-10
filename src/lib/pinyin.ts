@@ -1,5 +1,5 @@
-// Twin of the Java PinyinConverter (src/main/java/.../cedict/PinyinConverter.java).
-// Rules and test table: src/docs/specs/04-cedict-and-pinyin.md. Keep both implementations in sync.
+// Twin of the Java PinyinConverter in the backend (src/main/java/.../cedict/PinyinConverter.java).
+// Rules and test table: backend repo, src/docs/specs/04-cedict-and-pinyin.md. Keep both implementations in sync.
 
 import { SYLLABLES } from "./pinyin-syllables";
 

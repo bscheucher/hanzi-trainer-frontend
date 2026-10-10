@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { stripTones, toNumbered, toToneMarks } from "./pinyin";
 import { SYLLABLES } from "./pinyin-syllables";
 
-// Same table as PinyinConverterTests.java (spec 04).
+// Same table as PinyinConverterTests.java in the backend (spec 04).
 const SPEC_TABLE: [string, string][] = [
   ["ni3 hao3", "nǐhǎo"],
   ["xue2 xi2", "xuéxí"],
@@ -101,9 +101,13 @@ describe("stripTones", () => {
   });
 });
 
+// The backend repo is expected next to this one (../hanzi-trainer); override with HANZI_BACKEND_DIR.
+const BACKEND_DIR = process.env.HANZI_BACKEND_DIR ?? resolve(__dirname, "../../../hanzi-trainer");
+const BACKEND_SYLLABLES = resolve(BACKEND_DIR, "src/main/resources/pinyin/syllables.txt");
+
 describe("syllable list", () => {
-  it("matches the backend resource", () => {
-    const javaList = readFileSync(resolve(__dirname, "../../../src/main/resources/pinyin/syllables.txt"), "utf8")
+  it.skipIf(!existsSync(BACKEND_SYLLABLES))("matches the backend resource", () => {
+    const javaList = readFileSync(BACKEND_SYLLABLES, "utf8")
       .split("\n")
       .map((l) => l.trim())
       .filter((l) => l && !l.startsWith("#"));

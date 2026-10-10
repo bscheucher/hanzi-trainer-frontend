@@ -1,4 +1,4 @@
-// Mirrors the DTOs in src/docs/specs/03-api.md.
+// Mirrors the DTOs in the backend repo's src/docs/specs/03-api.md.
 
 /** RFC 7807 error body returned by the backend for every error. */
 export interface ProblemDetail {

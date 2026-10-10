@@ -1,4 +1,4 @@
-// Copy of src/main/resources/pinyin/syllables.txt (CC-CEDICT readings, ü written as v).
+// Copy of the backend's src/main/resources/pinyin/syllables.txt (CC-CEDICT readings, ü written as v).
 // pinyin.test.ts fails if the two lists differ.
 export const SYLLABLES: ReadonlySet<string> = new Set([
   "a", "ai", "an", "ang", "ao", "ba", "bai", "ban", "bang", "bao", "bei", "ben", "beng", "bi",
