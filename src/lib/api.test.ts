@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiFetch, uploadPage } from "./api";
+import { API_BASE_URL, ApiError, apiFetch, searchWords, unlinkWord, updateWord, uploadPage } from "./api";
 
 function mockFetch(response: Response) {
   const fetchMock = vi.fn().mockResolvedValue(response);
@@ -61,5 +61,39 @@ describe("uploadPage", () => {
     await uploadPage(7, new Blob(["x"]));
 
     expect((fetchMock.mock.calls[0][1].body as FormData).has("pageNo")).toBe(false);
+  });
+});
+
+describe("vocabulary", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubFetch() {
+    const fetchMock = vi.fn().mockImplementation(
+      async () => new Response(JSON.stringify({ content: [], page: {} }), { headers: { "content-type": "application/json" } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  it("searchWords sends only the given filters", async () => {
+    const fetchMock = stubFetch();
+
+    await searchWords({ q: " xuexi ", lessonId: 7, page: 2 });
+    await searchWords();
+
+    expect(fetchMock.mock.calls[0][0]).toBe(`${API_BASE_URL}/api/words?lessonId=7&q=xuexi&page=2`);
+    expect(fetchMock.mock.calls[1][0]).toBe(`${API_BASE_URL}/api/words`);
+  });
+
+  it("updateWord patches JSON and unlinkWord deletes the lesson link", async () => {
+    const fetchMock = stubFetch();
+
+    await updateWord(5, { meaningDe: "" });
+    await unlinkWord(7, 5);
+
+    expect(fetchMock.mock.calls[0][0]).toBe(`${API_BASE_URL}/api/words/5`);
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "PATCH", body: '{"meaningDe":""}' });
+    expect(fetchMock.mock.calls[1][0]).toBe(`${API_BASE_URL}/api/lessons/7/words/5`);
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "DELETE" });
   });
 });

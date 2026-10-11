@@ -4,9 +4,13 @@ import type {
   LessonDetailDto,
   LessonSummaryDto,
   PageDto,
+  Paged,
   ProblemDetail,
   ReadingCheckDto,
   TextbookDto,
+  UpdateWordRequest,
+  WordDetailDto,
+  WordDto,
 } from "./types";
 
 export const API_BASE_URL =
@@ -81,6 +85,36 @@ export const checkReading = (hanzi: string, pinyin: string) =>
 
 export const confirmWords = (lessonId: number, body: ConfirmRequest) =>
   apiFetch<ConfirmResult>(`/lessons/${lessonId}/words/confirm`, jsonBody("POST", body));
+
+// ------------------------------------------------------------------ vocabulary
+
+export interface WordQuery {
+  lessonId?: number;
+  q?: string;
+  page?: number;
+  size?: number;
+}
+
+export function searchWords({ lessonId, q, page, size }: WordQuery = {}) {
+  const params = new URLSearchParams();
+  if (lessonId != null) params.set("lessonId", String(lessonId));
+  if (q?.trim()) params.set("q", q.trim());
+  if (page) params.set("page", String(page));
+  if (size) params.set("size", String(size));
+  const query = params.toString();
+  return apiFetch<Paged<WordDto>>(`/words${query ? `?${query}` : ""}`);
+}
+
+export const getWord = (id: number) => apiFetch<WordDetailDto>(`/words/${id}`);
+
+export const updateWord = (id: number, body: UpdateWordRequest) =>
+  apiFetch<WordDto>(`/words/${id}`, jsonBody("PATCH", body));
+
+export const deleteWord = (id: number) => apiFetch<void>(`/words/${id}`, { method: "DELETE" });
+
+/** Removes the word from one lesson; the word and its review cards stay. */
+export const unlinkWord = (lessonId: number, wordId: number) =>
+  apiFetch<void>(`/lessons/${lessonId}/words/${wordId}`, { method: "DELETE" });
 
 function jsonBody(method: string, body: unknown): RequestInit {
   return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };

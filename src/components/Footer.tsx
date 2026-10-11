@@ -16,6 +16,15 @@ export default function Footer() {
         >
           CC BY-SA 4.0
         </a>
+        . Stroke data:{" "}
+        <a href="https://github.com/skishore/makemeahanzi" className="underline hover:text-foreground">
+          Make Me a Hanzi
+        </a>{" "}
+        via{" "}
+        <a href="https://hanziwriter.org" className="underline hover:text-foreground">
+          Hanzi Writer
+        </a>
+        , Arphic Public License.
       </p>
     </footer>
   );

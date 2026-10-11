@@ -43,12 +43,14 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         ) : (
           <ul className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
             {lesson.words.map((w) => (
-              <li key={w.id} className="flex items-baseline gap-3">
-                <span lang="zh-CN" className="text-lg">
-                  {w.hanzi}
-                </span>
-                <span>{w.pinyin}</span>
-                <span className="text-muted">{w.meaningDe ?? w.meaningEn}</span>
+              <li key={w.id}>
+                <Link href={`/vocabulary/${w.id}`} className="flex items-baseline gap-3 hover:underline">
+                  <span lang="zh-CN" className="text-lg">
+                    {w.hanzi}
+                  </span>
+                  <span>{w.pinyin}</span>
+                  <span className="text-muted">{w.meaningDe ?? w.meaningEn}</span>
+                </Link>
               </li>
             ))}
           </ul>
