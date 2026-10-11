@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { pageImageUrl } from "@/lib/api";
 import type { PageDto } from "@/lib/types";
@@ -53,6 +54,14 @@ export default function PageCard({ page, onRerun, onDelete }: Props) {
         )}
 
         <div className="mt-auto flex gap-3 text-sm">
+          {page.status === "DONE" && (
+            <Link
+              href={`/lessons/${page.lessonId}/pages/${page.id}`}
+              className="font-medium underline hover:text-foreground"
+            >
+              {page.confirmed ? "Review again" : "Review words"}
+            </Link>
+          )}
           {page.status === "FAILED" && (
             <button onClick={() => onRerun(page.id)} className="underline hover:text-foreground">
               Re-run extraction

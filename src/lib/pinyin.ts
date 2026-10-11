@@ -210,6 +210,19 @@ function toneOf(tones: number[], from: number, to: number): number {
   return tone;
 }
 
+// ------------------------------------------------------------------ user input
+
+/**
+ * Accepts what people type into a pinyin field: numbered input without spaces (`xue2xi2`, `peng2you`) is
+ * converted to tone marks; anything without tone digits is returned unchanged (trimmed).
+ */
+export function numberedInputToMarks(input: string): string {
+  const trimmed = input.trim();
+  if (!/[1-5]/.test(trimmed)) return trimmed;
+  const tokens = trimmed.match(/[A-Za-züÜv:]+[1-5]?/g) ?? [];
+  return toToneMarks(tokens.map((t) => (/[1-5]$/.test(t) ? t : `${t}5`)).join(" "));
+}
+
 // ------------------------------------------------------------------ search helper
 
 /** `"xue2 xi2"` → `"xue xi"`. */

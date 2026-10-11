@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { stripTones, toNumbered, toToneMarks } from "./pinyin";
+import { numberedInputToMarks, stripTones, toNumbered, toToneMarks } from "./pinyin";
 import { SYLLABLES } from "./pinyin-syllables";
 
 // Same table as PinyinConverterTests.java in the backend (spec 04).
@@ -90,6 +90,21 @@ describe("toNumbered edge cases", () => {
     ["xuéé", 1],
   ] as const)("rejects %s (%i)", (marked, count) => {
     expect(() => toNumbered(marked, count)).toThrow();
+  });
+});
+
+describe("numberedInputToMarks", () => {
+  it.each([
+    ["xue2xi2", "xuéxí"],
+    ["xue2 xi2", "xuéxí"],
+    ["peng2you", "péngyou"],
+    ["nv3", "nǚ"],
+    ["Bei3jing1", "Běijīng"],
+    ["xi1an1", "xī'ān"],
+    [" xuéxí ", "xuéxí"],
+    ["", ""],
+  ])("%s → %s", (input, expected) => {
+    expect(numberedInputToMarks(input)).toBe(expected);
   });
 });
 

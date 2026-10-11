@@ -151,3 +151,11 @@ describe("LessonPages", () => {
     expect(screen.getByText(/needs ANTHROPIC_API_KEY/)).toHaveAttribute("role", "alert");
   });
 });
+
+describe("PageCard review link", () => {
+  it("links finished pages to their review screen", () => {
+    render(<LessonPages lessonId={7} initialPages={[page({ id: 3, status: "DONE", extraction: EXTRACTION })]} />);
+
+    expect(screen.getByRole("link", { name: "Review words" })).toHaveAttribute("href", "/lessons/7/pages/3");
+  });
+});
