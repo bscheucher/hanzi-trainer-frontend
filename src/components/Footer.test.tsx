@@ -11,3 +11,13 @@ it("shows the CC-CEDICT attribution with license link", () => {
     "https://creativecommons.org/licenses/by-sa/4.0/",
   );
 });
+
+it("credits the stroke-order data and its license", () => {
+  render(<Footer />);
+
+  expect(screen.getByRole("contentinfo")).toHaveTextContent("Stroke data: Make Me a Hanzi via Hanzi Writer, Arphic Public License.");
+  expect(screen.getByRole("link", { name: "Make Me a Hanzi" })).toHaveAttribute(
+    "href",
+    "https://github.com/skishore/makemeahanzi",
+  );
+});

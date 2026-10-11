@@ -96,6 +96,27 @@ export interface WordDto {
   verified: boolean;
 }
 
+export type CardType = "RECOGNITION" | "WRITING" | "TONE";
+export type CardState = "NEW" | "LEARNING" | "REVIEW" | "RELEARNING";
+
+export interface WordDetailDto extends WordDto {
+  lessons: { lessonId: number; lessonNo: number; textbookTitle: string; exampleSentence: string | null }[];
+  cards: { cardType: CardType; state: CardState; due: string }[];
+}
+
+/** `PATCH /words/{id}`: absent fields stay unchanged; a blank `meaningDe` / `partOfSpeech` clears it. */
+export interface UpdateWordRequest {
+  meaningEn?: string;
+  meaningDe?: string;
+  partOfSpeech?: string;
+}
+
+/** Spring Data `PagedModel` (spec 03). */
+export interface Paged<T> {
+  content: T[];
+  page: { number: number; size: number; totalElements: number; totalPages: number };
+}
+
 export type CedictStatus = "MATCH" | "PINYIN_MISMATCH" | "NOT_FOUND";
 
 export interface CedictReading {
