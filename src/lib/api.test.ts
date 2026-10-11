@@ -1,5 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { API_BASE_URL, ApiError, apiFetch, searchWords, unlinkWord, updateWord, uploadPage } from "./api";
+import {
+  API_BASE_URL,
+  ApiError,
+  answerExercise,
+  apiFetch,
+  createPracticeSession,
+  searchWords,
+  unlinkWord,
+  updateWord,
+  uploadPage,
+} from "./api";
 
 function mockFetch(response: Response) {
   const fetchMock = vi.fn().mockResolvedValue(response);
@@ -95,5 +105,24 @@ describe("vocabulary", () => {
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "PATCH", body: '{"meaningDe":""}' });
     expect(fetchMock.mock.calls[1][0]).toBe(`${API_BASE_URL}/api/lessons/7/words/5`);
     expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "DELETE" });
+  });
+});
+
+describe("practice", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("posts the session request and answers as JSON", async () => {
+    const fetchMock = vi.fn().mockImplementation(
+      async () => new Response("{}", { headers: { "content-type": "application/json" } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await createPracticeSession({ lessonId: 7, types: ["TONE"], size: 5 });
+    await answerExercise(3, { response: { tones: [2, 5] }, durationMs: 1200 });
+
+    expect(fetchMock.mock.calls[0][0]).toBe(`${API_BASE_URL}/api/practice/sessions`);
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "POST", body: '{"lessonId":7,"types":["TONE"],"size":5}' });
+    expect(fetchMock.mock.calls[1][0]).toBe(`${API_BASE_URL}/api/exercises/3/answer`);
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({ body: '{"response":{"tones":[2,5]},"durationMs":1200}' });
   });
 });

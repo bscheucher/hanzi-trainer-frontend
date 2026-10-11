@@ -1,13 +1,17 @@
 import type {
+  AnswerRequest,
+  AnswerResult,
   ConfirmRequest,
   ConfirmResult,
   LessonDetailDto,
   LessonSummaryDto,
   PageDto,
   Paged,
+  PracticeSessionDto,
   ProblemDetail,
   ReadingCheckDto,
   TextbookDto,
+  ExerciseType,
   UpdateWordRequest,
   WordDetailDto,
   WordDto,
@@ -115,6 +119,14 @@ export const deleteWord = (id: number) => apiFetch<void>(`/words/${id}`, { metho
 /** Removes the word from one lesson; the word and its review cards stay. */
 export const unlinkWord = (lessonId: number, wordId: number) =>
   apiFetch<void>(`/lessons/${lessonId}/words/${wordId}`, { method: "DELETE" });
+
+// ------------------------------------------------------------------ practice
+
+export const createPracticeSession = (body: { lessonId: number; types?: ExerciseType[]; size?: number }) =>
+  apiFetch<PracticeSessionDto>("/practice/sessions", jsonBody("POST", body));
+
+export const answerExercise = (id: number, body: AnswerRequest) =>
+  apiFetch<AnswerResult>(`/exercises/${id}/answer`, jsonBody("POST", body));
 
 function jsonBody(method: string, body: unknown): RequestInit {
   return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };

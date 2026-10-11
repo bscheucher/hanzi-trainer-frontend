@@ -29,7 +29,14 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             )}
           </h1>
         </div>
-        <DeleteLessonButton lessonId={lesson.id} />
+        <div className="flex flex-wrap items-center gap-4">
+          {lesson.words.length > 0 && (
+            <Link href={`/practice/${lesson.id}`} className="rounded bg-foreground px-3 py-1.5 text-sm text-background">
+              Practice
+            </Link>
+          )}
+          <DeleteLessonButton lessonId={lesson.id} />
+        </div>
       </div>
 
       <LessonPages lessonId={lesson.id} initialPages={lesson.pages} />

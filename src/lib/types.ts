@@ -176,3 +176,50 @@ export interface ConfirmResult {
   linked: number;
   words: WordDto[];
 }
+
+// ------------------------------------------------------------------ exercises (spec 07)
+
+export type ExerciseType =
+  | "HANZI_TO_MEANING"
+  | "MEANING_TO_HANZI"
+  | "TONE"
+  | "FILL_BLANK"
+  | "WORD_ORDER"
+  | "TRANSLATION";
+
+export interface HanziToMeaningPrompt {
+  hanzi: string;
+  options: string[];
+}
+
+export interface TonePrompt {
+  hanzi: string;
+  syllables: string[];
+}
+
+/** The answer is never part of an exercise; it comes back in `AnswerResult.expected`. */
+export type ExerciseDto = { id: number | null; wordIds: number[] } & (
+  | { type: "HANZI_TO_MEANING"; prompt: HanziToMeaningPrompt }
+  | { type: "TONE"; prompt: TonePrompt }
+);
+
+export interface PracticeSessionDto {
+  exercises: ExerciseDto[];
+}
+
+export type ExerciseResponse = { selected: string } | { tones: number[] };
+
+export interface AnswerRequest {
+  response: ExerciseResponse;
+  durationMs: number;
+  exerciseId?: number;
+}
+
+export interface AnswerResult {
+  correct: boolean;
+  score: number;
+  /** The answer key: `{correct}` for HANZI_TO_MEANING, `{tones}` for TONE. */
+  expected: { correct?: string; tones?: number[] };
+  feedback: string | null;
+  suggestedRating: 1 | 2 | 3 | 4;
+}
