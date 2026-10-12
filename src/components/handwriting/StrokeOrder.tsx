@@ -1,13 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-const HAN = /\p{Script=Han}/u;
-
-// Loaded lazily and once for all characters: the library is browser-only and fetches each character's
-// stroke data from jsDelivr.
-let hanziWriter: Promise<typeof import("hanzi-writer")> | null = null;
-const loadHanziWriter = () => (hanziWriter ??= import("hanzi-writer"));
+import { HAN, loadHanziWriter } from "./hanziWriter";
+import TianZiGe from "./TianZiGe";
 
 /** Looping stroke-order animation, one box per Chinese character (spec 08); other characters are shown as text. */
 export default function StrokeOrder({ hanzi, size = 160 }: { hanzi: string; size?: number }) {
@@ -79,20 +74,5 @@ function CharacterAnimation({ char, size }: { char: string; size: number }) {
       </div>
       {missing && <figcaption className="text-xs text-muted">no stroke data for {char}</figcaption>}
     </figure>
-  );
-}
-
-/** 田字格: square with a cross and diagonals as writing guides. */
-function TianZiGe() {
-  return (
-    <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full text-border" aria-hidden="true">
-      <rect x="0.5" y="0.5" width="99" height="99" fill="none" stroke="currentColor" />
-      <g stroke="currentColor" strokeDasharray="3 3" strokeWidth="0.6">
-        <line x1="50" y1="0" x2="50" y2="100" />
-        <line x1="0" y1="50" x2="100" y2="50" />
-        <line x1="0" y1="0" x2="100" y2="100" />
-        <line x1="100" y1="0" x2="0" y2="100" />
-      </g>
-    </svg>
   );
 }

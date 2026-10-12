@@ -197,17 +197,36 @@ export interface TonePrompt {
   syllables: string[];
 }
 
+/** `hanzi` is needed by Hanzi Writer; it is not shown until the word is written. */
+export interface MeaningToHanziPrompt {
+  hanzi: string;
+  meaningEn: string;
+  meaningDe: string | null;
+  /** Tone-marked display form. */
+  pinyin: string;
+  characterCount: number;
+}
+
 /** The answer is never part of an exercise; it comes back in `AnswerResult.expected`. */
 export type ExerciseDto = { id: number | null; wordIds: number[] } & (
   | { type: "HANZI_TO_MEANING"; prompt: HanziToMeaningPrompt }
   | { type: "TONE"; prompt: TonePrompt }
+  | { type: "MEANING_TO_HANZI"; prompt: MeaningToHanziPrompt }
 );
 
 export interface PracticeSessionDto {
   exercises: ExerciseDto[];
 }
 
-export type ExerciseResponse = { selected: string } | { tones: number[] };
+export interface MeaningToHanziResponse {
+  hanzi: string;
+  /** Per character; a character with more than 3 fails. */
+  strokeMistakes: number[];
+  hintsUsed: number;
+  skipped: boolean;
+}
+
+export type ExerciseResponse = { selected: string } | { tones: number[] } | MeaningToHanziResponse;
 
 export interface AnswerRequest {
   response: ExerciseResponse;
@@ -218,8 +237,8 @@ export interface AnswerRequest {
 export interface AnswerResult {
   correct: boolean;
   score: number;
-  /** The answer key: `{correct}` for HANZI_TO_MEANING, `{tones}` for TONE. */
-  expected: { correct?: string; tones?: number[] };
+  /** The answer key: `{correct}` for HANZI_TO_MEANING, `{tones}` for TONE, `{hanzi}` for MEANING_TO_HANZI. */
+  expected: { correct?: string; tones?: number[]; hanzi?: string };
   feedback: string | null;
   suggestedRating: 1 | 2 | 3 | 4;
 }
