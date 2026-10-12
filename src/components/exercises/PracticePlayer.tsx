@@ -8,12 +8,14 @@ import { toToneMarks } from "@/lib/pinyin";
 import type { AnswerResult, ExerciseDto, ExerciseResponse, ExerciseType } from "@/lib/types";
 import AnswerFeedback from "./AnswerFeedback";
 import HanziToMeaningExercise from "./HanziToMeaningExercise";
+import MeaningToHanziExercise from "./MeaningToHanziExercise";
 import ToneExercise from "./ToneExercise";
 
-/** The types the player can show so far (M5). */
+/** The types the player can show so far (M6). */
 const TYPE_CHOICES: { type: ExerciseType; label: string }[] = [
   { type: "HANZI_TO_MEANING", label: "Meaning" },
   { type: "TONE", label: "Tones" },
+  { type: "MEANING_TO_HANZI", label: "Writing" },
 ];
 const SIZES = [5, 10, 15, 20, 30];
 export const DEFAULT_SIZE = 15;
@@ -154,13 +156,14 @@ function ExerciseStep({
     shownAt.current = performance.now();
   }, []);
 
+  /** @param measuredMs set by exercises that time themselves, e.g. writing excludes the final animation */
   const submit = useCallback(
-    async (response: ExerciseResponse) => {
+    async (response: ExerciseResponse, measuredMs?: number) => {
       if (exercise.id === null) return;
       setSubmitting(true);
       setError(null);
       try {
-        const durationMs = Math.round(performance.now() - shownAt.current);
+        const durationMs = measuredMs ?? Math.round(performance.now() - shownAt.current);
         setResult(await answerExercise(exercise.id, { response, durationMs }));
       } catch (err) {
         setError(errorMessage(err));
@@ -205,8 +208,10 @@ function ExerciseStep({
 
       {exercise.type === "HANZI_TO_MEANING" ? (
         <HanziToMeaningExercise prompt={exercise.prompt} result={result} selected={selected} onAnswer={answerMeaning} />
-      ) : (
+      ) : exercise.type === "TONE" ? (
         <ToneExercise prompt={exercise.prompt} result={result} submitting={submitting} onAnswer={(tones) => submit({ tones })} />
+      ) : (
+        <MeaningToHanziExercise prompt={exercise.prompt} result={result} submitting={submitting} onAnswer={submit} />
       )}
 
       {error && (
@@ -281,8 +286,11 @@ function Summary({
   );
 }
 
-/** The right answer in a few words, for the summary: the meaning, or the tone-marked syllables. */
+/** The right answer in a few words, for the summary: the meaning, the tone-marked syllables, or pinyin and meaning. */
 function correctAnswer(exercise: ExerciseDto, result: AnswerResult): string {
+  if (exercise.type === "MEANING_TO_HANZI") {
+    return `${exercise.prompt.pinyin}, ${exercise.prompt.meaningEn}`;
+  }
   if (exercise.type === "TONE") {
     const tones = result.expected.tones ?? [];
     return exercise.prompt.syllables.map((s, i) => toToneMarks(`${s}${tones[i]}`)).join(" ");

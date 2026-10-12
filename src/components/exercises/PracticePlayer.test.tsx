@@ -42,7 +42,11 @@ describe("PracticePlayer", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Session size" }), { target: { value: "5" } });
     await start();
 
-    expect(api.createPracticeSession).toHaveBeenCalledWith({ lessonId: 7, types: ["HANZI_TO_MEANING"], size: 5 });
+    expect(api.createPracticeSession).toHaveBeenCalledWith({
+      lessonId: 7,
+      types: ["HANZI_TO_MEANING", "MEANING_TO_HANZI"],
+      size: 5,
+    });
     expect(screen.getByText("朋友")).toBeInTheDocument();
   });
 
@@ -51,6 +55,7 @@ describe("PracticePlayer", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Meaning" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Tones" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Writing" }));
 
     expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
   });
