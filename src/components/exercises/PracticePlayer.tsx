@@ -7,16 +7,23 @@ import { errorMessage } from "@/lib/errors";
 import { toToneMarks } from "@/lib/pinyin";
 import type { AnswerResult, ExerciseDto, ExerciseResponse, ExerciseType } from "@/lib/types";
 import AnswerFeedback from "./AnswerFeedback";
+import FillBlankExercise from "./FillBlankExercise";
 import HanziToMeaningExercise from "./HanziToMeaningExercise";
 import MeaningToHanziExercise from "./MeaningToHanziExercise";
 import ToneExercise from "./ToneExercise";
+import TranslationExercise from "./TranslationExercise";
+import WordOrderExercise from "./WordOrderExercise";
 
-/** The types the player can show so far (M6). */
 const TYPE_CHOICES: { type: ExerciseType; label: string }[] = [
   { type: "HANZI_TO_MEANING", label: "Meaning" },
   { type: "TONE", label: "Tones" },
   { type: "MEANING_TO_HANZI", label: "Writing" },
+  { type: "FILL_BLANK", label: "Fill in the blank" },
+  { type: "WORD_ORDER", label: "Word order" },
+  { type: "TRANSLATION", label: "Translation" },
 ];
+/** Only stored exercises of these types are used; they are generated on the lesson page. */
+const GENERATED: ExerciseType[] = ["FILL_BLANK", "WORD_ORDER", "TRANSLATION"];
 const SIZES = [5, 10, 15, 20, 30];
 export const DEFAULT_SIZE = 15;
 
@@ -48,7 +55,10 @@ export default function PracticePlayer({ lessonId, lessonUrl }: { lessonId: numb
     try {
       const session = await createPracticeSession({ lessonId, types, size });
       if (session.exercises.length === 0) {
-        setError("No exercises for these settings: the lesson has no confirmed words that fit.");
+        setError(
+          "No exercises for these settings: the lesson has no confirmed words that fit." +
+            (types.some((t) => GENERATED.includes(t)) ? " Sentence exercises are generated on the lesson page." : ""),
+        );
         setPhase({ name: "setup" });
       } else {
         setPhase({ name: "running", exercises: session.exercises, index: 0, answered: [] });
@@ -210,8 +220,14 @@ function ExerciseStep({
         <HanziToMeaningExercise prompt={exercise.prompt} result={result} selected={selected} onAnswer={answerMeaning} />
       ) : exercise.type === "TONE" ? (
         <ToneExercise prompt={exercise.prompt} result={result} submitting={submitting} onAnswer={(tones) => submit({ tones })} />
-      ) : (
+      ) : exercise.type === "MEANING_TO_HANZI" ? (
         <MeaningToHanziExercise prompt={exercise.prompt} result={result} submitting={submitting} onAnswer={submit} />
+      ) : exercise.type === "FILL_BLANK" ? (
+        <FillBlankExercise prompt={exercise.prompt} result={result} selected={selected} onAnswer={answerMeaning} />
+      ) : exercise.type === "WORD_ORDER" ? (
+        <WordOrderExercise prompt={exercise.prompt} result={result} submitting={submitting} onAnswer={(order) => submit({ order })} />
+      ) : (
+        <TranslationExercise prompt={exercise.prompt} result={result} submitting={submitting} onAnswer={(text) => submit({ text })} />
       )}
 
       {error && (
@@ -261,10 +277,12 @@ function Summary({
           <ul className="mt-1 flex flex-col gap-1">
             {missed.map(({ exercise, result }, i) => (
               <li key={i} className="flex flex-wrap items-baseline gap-2">
-                <span lang="zh-CN" className="text-lg">
-                  {exercise.prompt.hanzi}
+                <span lang={exercise.type === "TRANSLATION" ? exercise.prompt.sourceLang : "zh-CN"} className="text-lg">
+                  {promptLabel(exercise)}
                 </span>
-                <span className="text-muted">{correctAnswer(exercise, result)}</span>
+                <span lang={chineseAnswer(exercise) ? "zh-CN" : undefined} className="text-muted">
+                  {correctAnswer(exercise, result)}
+                </span>
               </li>
             ))}
           </ul>
@@ -286,14 +304,42 @@ function Summary({
   );
 }
 
-/** The right answer in a few words, for the summary: the meaning, the tone-marked syllables, or pinyin and meaning. */
+/** What was asked, for the summary: the word, or the sentence (Chinese, or the source of a translation). */
+function promptLabel(exercise: ExerciseDto): string {
+  switch (exercise.type) {
+    case "FILL_BLANK":
+      return exercise.prompt.sentence;
+    case "WORD_ORDER":
+      return exercise.prompt.tokens.join(" ");
+    case "TRANSLATION":
+      return exercise.prompt.source;
+    default:
+      return exercise.prompt.hanzi;
+  }
+}
+
+const chineseAnswer = (exercise: ExerciseDto) =>
+  exercise.type === "FILL_BLANK" || exercise.type === "WORD_ORDER" || exercise.type === "TRANSLATION";
+
+/**
+ * The right answer in a few words, for the summary: the meaning, the tone-marked syllables, pinyin and meaning,
+ * or the Chinese sentence.
+ */
 function correctAnswer(exercise: ExerciseDto, result: AnswerResult): string {
-  if (exercise.type === "MEANING_TO_HANZI") {
-    return `${exercise.prompt.pinyin}, ${exercise.prompt.meaningEn}`;
+  switch (exercise.type) {
+    case "MEANING_TO_HANZI":
+      return `${exercise.prompt.pinyin}, ${exercise.prompt.meaningEn}`;
+    case "TONE": {
+      const tones = result.expected.tones ?? [];
+      return exercise.prompt.syllables.map((s, i) => toToneMarks(`${s}${tones[i]}`)).join(" ");
+    }
+    case "FILL_BLANK":
+      return result.expected.fullSentence ?? "";
+    case "WORD_ORDER":
+      return result.expected.accepted?.[0]?.join("") ?? "";
+    case "TRANSLATION":
+      return result.expected.reference ?? "";
+    default:
+      return result.expected.correct ?? "";
   }
-  if (exercise.type === "TONE") {
-    const tones = result.expected.tones ?? [];
-    return exercise.prompt.syllables.map((s, i) => toToneMarks(`${s}${tones[i]}`)).join(" ");
-  }
-  return result.expected.correct ?? "";
 }
