@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import * as lookup from "@/components/handwriting/hanziLookup";
 import * as api from "@/lib/api";
 import type { CandidateDto, PageDto } from "@/lib/types";
 import { EXTRACTION, page } from "@/test/fixtures";
@@ -14,6 +15,7 @@ vi.mock("@/lib/api", async (original) => ({
   rerunExtraction: vi.fn(),
   deletePage: vi.fn(),
 }));
+vi.mock("@/components/handwriting/hanziLookup", () => ({ recognise: vi.fn() }));
 
 afterEach(() => vi.clearAllMocks());
 
@@ -195,6 +197,37 @@ describe("ReviewScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete 朋友" }));
     expect(screen.queryByRole("listitem", { name: "朋友" })).not.toBeInTheDocument();
     expect(confirmButton()).toHaveTextContent("Confirm selected (1)");
+  });
+
+  it("draws the hanzi of an added word and checks the reading when done", async () => {
+    vi.useFakeTimers();
+    vi.mocked(lookup.recognise).mockResolvedValue(["老", "考"]);
+    vi.mocked(api.checkReading).mockResolvedValue({
+      pinyin: "lǎo",
+      pinyinNumbered: "lao3",
+      cedictStatus: "NOT_FOUND",
+      cedictReadings: [],
+      error: null,
+    });
+    try {
+      render(<ReviewScreen page={reviewPage([])} />);
+      fireEvent.click(screen.getByRole("button", { name: "Add word" }));
+      fireEvent.click(within(row("new word")).getByRole("button", { name: "Draw hanzi" }));
+
+      const pad = within(row("new word")).getByRole("img", { name: "Drawing pad" });
+      fireEvent.pointerDown(pad, { pointerId: 1, clientX: 1, clientY: 1 });
+      fireEvent.pointerMove(pad, { pointerId: 1, clientX: 5, clientY: 9 });
+      fireEvent.pointerUp(pad, { pointerId: 1 });
+      await act(() => vi.advanceTimersByTimeAsync(300));
+      fireEvent.click(within(row("new word")).getByRole("button", { name: "老" }));
+
+      expect(within(row("老")).getByLabelText("Hanzi")).toHaveValue("老");
+      fireEvent.change(within(row("老")).getByLabelText("Pinyin"), { target: { value: "lao3" } });
+      await act(async () => fireEvent.click(within(row("老")).getByRole("button", { name: "Done drawing" })));
+      expect(api.checkReading).toHaveBeenCalledWith("老", "lǎo");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("asks before re-running extraction of a confirmed page", async () => {

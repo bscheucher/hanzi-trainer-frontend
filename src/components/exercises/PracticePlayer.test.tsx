@@ -44,7 +44,7 @@ describe("PracticePlayer", () => {
 
     expect(api.createPracticeSession).toHaveBeenCalledWith({
       lessonId: 7,
-      types: ["HANZI_TO_MEANING", "MEANING_TO_HANZI"],
+      types: ["HANZI_TO_MEANING", "MEANING_TO_HANZI", "FILL_BLANK", "WORD_ORDER", "TRANSLATION"],
       size: 5,
     });
     expect(screen.getByText("朋友")).toBeInTheDocument();
@@ -56,6 +56,9 @@ describe("PracticePlayer", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Meaning" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Tones" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Writing" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Fill in the blank" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Word order" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Translation" }));
 
     expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
   });

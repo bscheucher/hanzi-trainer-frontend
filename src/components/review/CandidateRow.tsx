@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import HanziPad from "@/components/handwriting/HanziPad";
 import type { CedictReading } from "@/lib/types";
 import { LOW_CONFIDENCE, rowProblem, type Row } from "./rows";
 
@@ -17,6 +19,13 @@ const field = "mt-0.5 w-full rounded border border-border bg-background px-2 py-
 export default function CandidateRow({ row, onChange, onReadingBlur, onPickReading, onDelete }: Props) {
   const problem = rowProblem(row);
   const label = row.hanzi || "new word";
+  const [drawing, setDrawing] = useState(false);
+
+  function toggleDrawing() {
+    // Drawing changes the hanzi without a blur on the field, so check the reading when the pad closes.
+    if (drawing) onReadingBlur();
+    setDrawing(!drawing);
+  }
 
   return (
     <li
@@ -33,7 +42,10 @@ export default function CandidateRow({ row, onChange, onReadingBlur, onPickReadi
           include
         </label>
         <Badges row={row} />
-        <button onClick={onDelete} className="ml-auto text-sm text-muted hover:text-accent" aria-label={`Delete ${label}`}>
+        <button onClick={toggleDrawing} aria-expanded={drawing} className="ml-auto text-sm text-muted hover:text-foreground">
+          {drawing ? "Done drawing" : "Draw hanzi"}
+        </button>
+        <button onClick={onDelete} className="text-sm text-muted hover:text-accent" aria-label={`Delete ${label}`}>
           Delete
         </button>
       </div>
@@ -93,6 +105,12 @@ export default function CandidateRow({ row, onChange, onReadingBlur, onPickReadi
           />
         </label>
       </div>
+
+      {drawing && (
+        <div className="mt-3">
+          <HanziPad value={row.hanzi} onChange={(hanzi) => onChange({ hanzi, cedictStatus: null })} label={`Draw hanzi of ${label}`} />
+        </div>
+      )}
 
       {row.cedictStatus === "PINYIN_MISMATCH" && row.cedictReadings.length > 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored third-party code, kept unmodified (see public/hanzilookup/README.md):
+    "public/hanzilookup/**",
   ]),
 ]);
 

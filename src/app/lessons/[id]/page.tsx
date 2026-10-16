@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import GenerateExercises from "@/components/exercises/GenerateExercises";
 import DeleteLessonButton from "@/components/lessons/DeleteLessonButton";
 import LessonPages from "@/components/pages/LessonPages";
 import { ApiError, getLesson } from "@/lib/api";
@@ -63,6 +64,8 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
           </ul>
         )}
       </section>
+
+      {lesson.words.length > 0 && <GenerateExercises lessonId={lesson.id} />}
     </section>
   );
 }

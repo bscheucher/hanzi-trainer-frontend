@@ -12,6 +12,8 @@ import type {
   ReadingCheckDto,
   TextbookDto,
   ExerciseType,
+  GenerateExercisesRequest,
+  GenerationJobDto,
   UpdateWordRequest,
   WordDetailDto,
   WordDto,
@@ -127,6 +129,12 @@ export const createPracticeSession = (body: { lessonId: number; types?: Exercise
 
 export const answerExercise = (id: number, body: AnswerRequest) =>
   apiFetch<AnswerResult>(`/exercises/${id}/answer`, jsonBody("POST", body));
+
+/** Starts writing sentence exercises with the LLM; poll the job with {@link getGenerationJob}. */
+export const generateExercises = (lessonId: number, body: GenerateExercisesRequest) =>
+  apiFetch<GenerationJobDto>(`/lessons/${lessonId}/exercises/generate`, jsonBody("POST", body));
+
+export const getGenerationJob = (id: number) => apiFetch<GenerationJobDto>(`/generation-jobs/${id}`);
 
 function jsonBody(method: string, body: unknown): RequestInit {
   return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };

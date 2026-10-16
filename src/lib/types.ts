@@ -207,11 +207,34 @@ export interface MeaningToHanziPrompt {
   characterCount: number;
 }
 
+export interface FillBlankPrompt {
+  /** Contains exactly one `___`. */
+  sentence: string;
+  translationEn: string;
+  options: string[];
+}
+
+export interface WordOrderPrompt {
+  /** Shuffled, never in an accepted order. */
+  tokens: string[];
+  translationEn: string;
+}
+
+export interface TranslationPrompt {
+  source: string;
+  sourceLang: "de" | "en";
+  /** Lesson words the reference translation uses. */
+  hintWords: string[];
+}
+
 /** The answer is never part of an exercise; it comes back in `AnswerResult.expected`. */
 export type ExerciseDto = { id: number | null; wordIds: number[] } & (
   | { type: "HANZI_TO_MEANING"; prompt: HanziToMeaningPrompt }
   | { type: "TONE"; prompt: TonePrompt }
   | { type: "MEANING_TO_HANZI"; prompt: MeaningToHanziPrompt }
+  | { type: "FILL_BLANK"; prompt: FillBlankPrompt }
+  | { type: "WORD_ORDER"; prompt: WordOrderPrompt }
+  | { type: "TRANSLATION"; prompt: TranslationPrompt }
 );
 
 export interface PracticeSessionDto {
@@ -226,7 +249,12 @@ export interface MeaningToHanziResponse {
   skipped: boolean;
 }
 
-export type ExerciseResponse = { selected: string } | { tones: number[] } | MeaningToHanziResponse;
+export type ExerciseResponse =
+  | { selected: string }
+  | { tones: number[] }
+  | MeaningToHanziResponse
+  | { order: string[] }
+  | { text: string };
 
 export interface AnswerRequest {
   response: ExerciseResponse;
@@ -237,8 +265,38 @@ export interface AnswerRequest {
 export interface AnswerResult {
   correct: boolean;
   score: number;
-  /** The answer key: `{correct}` for HANZI_TO_MEANING, `{tones}` for TONE, `{hanzi}` for MEANING_TO_HANZI. */
-  expected: { correct?: string; tones?: number[]; hanzi?: string };
+  /**
+   * The answer key: `{correct}` for HANZI_TO_MEANING, `{tones}` for TONE, `{hanzi}` for MEANING_TO_HANZI,
+   * `{correct, fullSentence}` for FILL_BLANK, `{accepted}` for WORD_ORDER, `{reference, corrected}` for TRANSLATION.
+   */
+  expected: {
+    correct?: string;
+    tones?: number[];
+    hanzi?: string;
+    fullSentence?: string;
+    accepted?: string[][];
+    reference?: string;
+    corrected?: string;
+  };
   feedback: string | null;
   suggestedRating: 1 | 2 | 3 | 4;
+}
+
+/** The sentence types, written by the LLM on request (spec 07). */
+export type GeneratedExerciseType = "FILL_BLANK" | "WORD_ORDER" | "TRANSLATION";
+
+export interface GenerateExercisesRequest {
+  types: GeneratedExerciseType[];
+  /** Per type, 1–20. */
+  count: number;
+}
+
+export interface GenerationJobDto {
+  id: number;
+  status: "RUNNING" | "DONE" | "FAILED";
+  /** Exercises stored so far. */
+  created: number;
+  /** Exercises that failed a check and were discarded. */
+  rejected: number;
+  error?: string | null;
 }
