@@ -1,18 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { answerExercise, createPracticeSession } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { toToneMarks } from "@/lib/pinyin";
 import type { AnswerResult, ExerciseDto, ExerciseResponse, ExerciseType } from "@/lib/types";
-import AnswerFeedback from "./AnswerFeedback";
-import FillBlankExercise from "./FillBlankExercise";
-import HanziToMeaningExercise from "./HanziToMeaningExercise";
-import MeaningToHanziExercise from "./MeaningToHanziExercise";
-import ToneExercise from "./ToneExercise";
-import TranslationExercise from "./TranslationExercise";
-import WordOrderExercise from "./WordOrderExercise";
+import ExerciseStep from "./ExerciseStep";
 
 const TYPE_CHOICES: { type: ExerciseType; label: string }[] = [
   { type: "HANZI_TO_MEANING", label: "Meaning" },
@@ -73,7 +67,7 @@ export default function PracticePlayer({ lessonId, lessonUrl }: { lessonId: numb
   if (phase.name === "running") {
     const exercise = phase.exercises[phase.index];
     return (
-      <ExerciseStep
+      <PracticeStep
         key={`${phase.index}-${exercise.id}`}
         exercise={exercise}
         position={phase.index + 1}
@@ -143,7 +137,8 @@ export default function PracticePlayer({ lessonId, lessonUrl }: { lessonId: numb
   );
 }
 
-function ExerciseStep({
+/** A practice step: progress, then the exercise; Next (or Enter) after the answer. */
+function PracticeStep({
   exercise,
   position,
   total,
@@ -156,98 +151,52 @@ function ExerciseStep({
   onNext(result: AnswerResult): void;
   onQuit(): void;
 }) {
-  const shownAt = useRef(0);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<AnswerResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    shownAt.current = performance.now();
-  }, []);
-
-  /** @param measuredMs set by exercises that time themselves, e.g. writing excludes the final animation */
-  const submit = useCallback(
-    async (response: ExerciseResponse, measuredMs?: number) => {
-      if (exercise.id === null) return;
-      setSubmitting(true);
-      setError(null);
-      try {
-        const durationMs = measuredMs ?? Math.round(performance.now() - shownAt.current);
-        setResult(await answerExercise(exercise.id, { response, durationMs }));
-      } catch (err) {
-        setError(errorMessage(err));
-        setSelected(null);
-      } finally {
-        setSubmitting(false);
-      }
+  const answer = useCallback(
+    (response: ExerciseResponse, durationMs: number) => {
+      if (exercise.id === null) return Promise.reject(new Error("Practice exercises are stored"));
+      return answerExercise(exercise.id, { response, durationMs });
     },
     [exercise.id],
   );
 
-  const answerMeaning = useCallback(
-    (option: string) => {
-      setSelected(option);
-      void submit({ selected: option });
-    },
-    [submit],
+  return (
+    <ExerciseStep
+      exercise={exercise}
+      label={`Exercise ${position} of ${total}`}
+      answer={answer}
+      header={
+        <>
+          <div className="flex items-center justify-between text-sm text-muted">
+            <span>
+              {position} / {total}
+            </span>
+            <button onClick={onQuit} className="hover:text-foreground">
+              End session
+            </button>
+          </div>
+          <div className="h-1 w-full overflow-hidden rounded bg-border">
+            <div className="h-full bg-foreground" style={{ width: `${((position - 1) / total) * 100}%` }} />
+          </div>
+        </>
+      }
+      actions={(result) => <NextButton label={position < total ? "Next" : "Finish"} onNext={() => onNext(result)} />}
+    />
   );
+}
 
+function NextButton({ label, onNext }: { label: string; onNext(): void }) {
   useEffect(() => {
-    if (!result) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Enter") onNext(result!);
+      if (e.key === "Enter") onNext();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [result, onNext]);
+  }, [onNext]);
 
   return (
-    <section className="flex flex-col gap-6" aria-label={`Exercise ${position} of ${total}`}>
-      <div className="flex items-center justify-between text-sm text-muted">
-        <span>
-          {position} / {total}
-        </span>
-        <button onClick={onQuit} className="hover:text-foreground">
-          End session
-        </button>
-      </div>
-      <div className="h-1 w-full overflow-hidden rounded bg-border">
-        <div className="h-full bg-foreground" style={{ width: `${((position - 1) / total) * 100}%` }} />
-      </div>
-
-      {exercise.type === "HANZI_TO_MEANING" ? (
-        <HanziToMeaningExercise prompt={exercise.prompt} result={result} selected={selected} onAnswer={answerMeaning} />
-      ) : exercise.type === "TONE" ? (
-        <ToneExercise prompt={exercise.prompt} result={result} submitting={submitting} onAnswer={(tones) => submit({ tones })} />
-      ) : exercise.type === "MEANING_TO_HANZI" ? (
-        <MeaningToHanziExercise prompt={exercise.prompt} result={result} submitting={submitting} onAnswer={submit} />
-      ) : exercise.type === "FILL_BLANK" ? (
-        <FillBlankExercise prompt={exercise.prompt} result={result} selected={selected} onAnswer={answerMeaning} />
-      ) : exercise.type === "WORD_ORDER" ? (
-        <WordOrderExercise prompt={exercise.prompt} result={result} submitting={submitting} onAnswer={(order) => submit({ order })} />
-      ) : (
-        <TranslationExercise prompt={exercise.prompt} result={result} submitting={submitting} onAnswer={(text) => submit({ text })} />
-      )}
-
-      {error && (
-        <p role="alert" className="text-center text-sm text-accent">
-          {error}
-        </p>
-      )}
-      {result && (
-        <div className="mx-auto flex w-full max-w-xl flex-col gap-3">
-          <AnswerFeedback result={result} />
-          <button
-            onClick={() => onNext(result)}
-            autoFocus
-            className="self-end rounded bg-foreground px-4 py-1.5 text-sm text-background"
-          >
-            {position < total ? "Next" : "Finish"}
-          </button>
-        </div>
-      )}
-    </section>
+    <button onClick={onNext} autoFocus className="self-end rounded bg-foreground px-4 py-1.5 text-sm text-background">
+      {label}
+    </button>
   );
 }
 

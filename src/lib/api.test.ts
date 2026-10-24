@@ -4,7 +4,11 @@ import {
   ApiError,
   answerExercise,
   apiFetch,
+  answerReview,
   createPracticeSession,
+  getDueReviews,
+  getReviewForecast,
+  rateReview,
   searchWords,
   unlinkWord,
   updateWord,
@@ -124,5 +128,33 @@ describe("practice", () => {
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "POST", body: '{"lessonId":7,"types":["TONE"],"size":5}' });
     expect(fetchMock.mock.calls[1][0]).toBe(`${API_BASE_URL}/api/exercises/3/answer`);
     expect(fetchMock.mock.calls[1][1]).toMatchObject({ body: '{"response":{"tones":[2,5]},"durationMs":1200}' });
+  });
+});
+
+describe("reviews", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("fetches due cards and the forecast, answers with the exercise id and rates", async () => {
+    const fetchMock = vi.fn().mockImplementation(
+      async () => new Response("{}", { headers: { "content-type": "application/json" } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getDueReviews();
+    await getReviewForecast();
+    await answerReview(9, { response: { selected: "朋友" }, durationMs: 800, exerciseId: 40 });
+    await rateReview(9, 3);
+
+    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual([
+      `${API_BASE_URL}/api/reviews/due?limit=30`,
+      `${API_BASE_URL}/api/reviews/forecast?days=30`,
+      `${API_BASE_URL}/api/reviews/9/answer`,
+      `${API_BASE_URL}/api/reviews/9/rate`,
+    ]);
+    expect(fetchMock.mock.calls[2][1]).toMatchObject({
+      method: "POST",
+      body: '{"response":{"selected":"朋友"},"durationMs":800,"exerciseId":40}',
+    });
+    expect(fetchMock.mock.calls[3][1]).toMatchObject({ method: "POST", body: '{"rating":3}' });
   });
 });

@@ -1,6 +1,11 @@
 import type {
   AnswerRequest,
   AnswerResult,
+  CardDto,
+  ForecastDayDto,
+  Rating,
+  ReviewItemDto,
+  ReviewStatsDto,
   ConfirmRequest,
   ConfirmResult,
   LessonDetailDto,
@@ -135,6 +140,21 @@ export const generateExercises = (lessonId: number, body: GenerateExercisesReque
   apiFetch<GenerationJobDto>(`/lessons/${lessonId}/exercises/generate`, jsonBody("POST", body));
 
 export const getGenerationJob = (id: number) => apiFetch<GenerationJobDto>(`/generation-jobs/${id}`);
+
+// ------------------------------------------------------------------ reviews (spec 09)
+
+export const getReviewStats = () => apiFetch<ReviewStatsDto>("/reviews/stats");
+
+export const getDueReviews = (limit = 30) => apiFetch<ReviewItemDto[]>(`/reviews/due?limit=${limit}`);
+
+/** Grades without saving; {@link rateReview} applies the rating. */
+export const answerReview = (cardId: number, body: AnswerRequest) =>
+  apiFetch<AnswerResult>(`/reviews/${cardId}/answer`, jsonBody("POST", body));
+
+export const rateReview = (cardId: number, rating: Rating) =>
+  apiFetch<CardDto>(`/reviews/${cardId}/rate`, jsonBody("POST", { rating }));
+
+export const getReviewForecast = (days = 30) => apiFetch<ForecastDayDto[]>(`/reviews/forecast?days=${days}`);
 
 function jsonBody(method: string, body: unknown): RequestInit {
   return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
