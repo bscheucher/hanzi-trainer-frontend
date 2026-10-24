@@ -300,3 +300,46 @@ export interface GenerationJobDto {
   rejected: number;
   error?: string | null;
 }
+
+// ------------------------------------------------------------------ reviews (spec 09; CardType, CardState above)
+
+export type Rating = 1 | 2 | 3 | 4;
+
+export interface ReviewStatsDto {
+  /** NEW cards count only up to `newCardsLeftToday`; cards that cannot be asked are left out. */
+  dueNow: number;
+  dueToday: number;
+  reviewedToday: number;
+  newCardsLeftToday: number;
+  byState: Record<CardState, number>;
+  byType: Record<CardType, number>;
+}
+
+/** No word: it would reveal the answer. */
+export interface ReviewItemDto {
+  cardId: number;
+  cardType: CardType;
+  wordId: number;
+  /** Built on the fly (`id` null), or a stored FILL_BLANK (`id` set, sent back as `exerciseId`). */
+  exercise: ExerciseDto;
+  /** The interval each rating would schedule, as an ISO-8601 duration ("PT10M", "P3D"). */
+  previewIntervals: Record<"1" | "2" | "3" | "4", string>;
+}
+
+export interface CardDto {
+  id: number;
+  wordId: number;
+  cardType: CardType;
+  state: CardState;
+  due: string;
+  stability: number | null;
+  difficulty: number | null;
+  reps: number;
+  lapses: number;
+}
+
+export interface ForecastDayDto {
+  /** Local date, `YYYY-MM-DD`. */
+  date: string;
+  count: number;
+}
