@@ -1,23 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ExerciseStep from "@/components/exercises/ExerciseStep";
 import { ApiError, answerReview, getDueReviews, rateReview } from "@/lib/api";
+import { CARD_TYPE_LABELS } from "@/lib/cards";
 import { errorMessage } from "@/lib/errors";
 import type { AnswerResult, ExerciseResponse, Rating, ReviewItemDto } from "@/lib/types";
 import RatingButtons from "./RatingButtons";
 
-const CARD_LABELS: Record<ReviewItemDto["cardType"], string> = {
-  RECOGNITION: "Recognition",
-  WRITING: "Writing",
-  TONE: "Tones",
-};
-
 type Phase =
   | { name: "loading" }
   | { name: "running"; queue: ReviewItemDto[] }
-  | { name: "done" }
+  /** `ended`: the user ended the session; otherwise nothing more was due. */
+  | { name: "done"; ended?: boolean }
   | { name: "error"; message: string };
 
 /** The next cards from the server: a running queue, done when none are due, or the error. */
@@ -38,15 +34,24 @@ export default function ReviewSession() {
   const [phase, setPhase] = useState<Phase>({ name: "loading" });
   const [reviewed, setReviewed] = useState(0);
 
-  const load = useCallback(async () => setPhase(await fetchQueue()), []);
+  /** Only the latest fetch may set the phase; unmounting invalidates the one in flight. */
+  const latest = useRef(0);
+
+  const load = useCallback(() => {
+    const request = ++latest.current;
+    setPhase({ name: "loading" });
+    void fetchQueue().then((next) => {
+      if (request === latest.current) setPhase(next);
+    });
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    const request = ++latest.current;
     void fetchQueue().then((next) => {
-      if (!cancelled) setPhase(next);
+      if (request === latest.current) setPhase(next);
     });
     return () => {
-      cancelled = true;
+      latest.current = -1; // invalidates the fetch in flight
     };
   }, []);
 
@@ -57,8 +62,7 @@ export default function ReviewSession() {
       if (rest.length > 0) {
         setPhase({ name: "running", queue: rest });
       } else {
-        setPhase({ name: "loading" });
-        void load();
+        load();
       }
     },
     [load],
@@ -77,7 +81,7 @@ export default function ReviewSession() {
         <p role="alert" className="text-accent">
           {phase.message}
         </p>
-        <button onClick={() => void load()} className="rounded border border-border px-4 py-1.5 text-sm">
+        <button onClick={load} className="rounded border border-border px-4 py-1.5 text-sm">
           Try again
         </button>
       </div>
@@ -86,11 +90,19 @@ export default function ReviewSession() {
   if (phase.name === "done") {
     return (
       <section className="flex flex-col items-start gap-4">
-        <h2 className="text-xl font-semibold">{reviewed > 0 ? "Session finished" : "Nothing due"}</h2>
+        <h2 className="text-xl font-semibold">
+          {phase.ended ? "Session ended" : reviewed > 0 ? "Session finished" : "Nothing due"}
+        </h2>
         <p role="status">
           {reviewed > 0
-            ? `${reviewed} card${reviewed === 1 ? "" : "s"} reviewed. Cards still in learning come back in the next session.`
-            : "No cards are due right now."}
+            ? `${reviewed} card${reviewed === 1 ? "" : "s"} reviewed. ` +
+              (phase.ended
+                ? "The rest are still due."
+                : "Cards still in learning, and a word's other cards (they wait 10 minutes after one is rated), " +
+                  "come back in the next session.")
+            : phase.ended
+              ? "No cards reviewed; they are still due."
+              : "No cards are due right now."}
         </p>
         <Link href="/review" className="rounded bg-foreground px-4 py-1.5 text-sm text-background">
           Back to the dashboard
@@ -106,7 +118,7 @@ export default function ReviewSession() {
       item={item}
       reviewed={reviewed}
       onRated={() => next(phase.queue)}
-      onQuit={() => setPhase({ name: "done" })}
+      onQuit={() => setPhase({ name: "done", ended: true })}
     />
   );
 }
@@ -154,12 +166,12 @@ function ReviewStep({
   return (
     <ExerciseStep
       exercise={item.exercise}
-      label={`Review: ${CARD_LABELS[item.cardType]}`}
+      label={`Review: ${CARD_TYPE_LABELS[item.cardType]}`}
       answer={answer}
       header={
         <div className="flex items-center justify-between text-sm text-muted">
           <span>
-            {CARD_LABELS[item.cardType]} · {reviewed} reviewed
+            {CARD_TYPE_LABELS[item.cardType]} · {reviewed} reviewed
           </span>
           <button onClick={onQuit} className="hover:text-foreground">
             End session

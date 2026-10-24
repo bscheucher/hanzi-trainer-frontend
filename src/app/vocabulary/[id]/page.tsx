@@ -6,9 +6,8 @@ import DeleteWordButton from "@/components/vocabulary/DeleteWordButton";
 import UnlinkButton from "@/components/vocabulary/UnlinkButton";
 import WordEditor from "@/components/vocabulary/WordEditor";
 import { ApiError, getWord } from "@/lib/api";
-import type { CardType } from "@/lib/types";
+import { CARD_TYPE_LABELS } from "@/lib/cards";
 
-const CARD_LABELS: Record<CardType, string> = { RECOGNITION: "Recognition", WRITING: "Writing", TONE: "Tones" };
 
 export default async function WordPage({ params }: { params: Promise<{ id: string }> }) {
   await connection();
@@ -75,7 +74,7 @@ export default async function WordPage({ params }: { params: Promise<{ id: strin
           <ul className="flex flex-wrap gap-2 text-sm">
             {word.cards.map((c) => (
               <li key={c.cardType} className="rounded border border-border px-2 py-1">
-                {CARD_LABELS[c.cardType]} · {c.state.toLowerCase()} · due {c.due.slice(0, 10)}
+                {CARD_TYPE_LABELS[c.cardType]} · {c.state.toLowerCase()} · due {c.due.slice(0, 10)}
               </li>
             ))}
           </ul>

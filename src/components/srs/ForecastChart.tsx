@@ -12,9 +12,17 @@ function dayLabel(date: string, style: "short" | "long") {
     : d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
 
+/** Keeps the tooltip inside the chart: left-aligned at the start, right-aligned at the end, centred between. */
+function tooltipAnchor(index: number, count: number) {
+  if (index < count / 3) return "left-0";
+  if (index >= (count * 2) / 3) return "right-0";
+  return "left-1/2 -translate-x-1/2";
+}
+
 /**
- * Cards falling due per day, today first (spec 09): one column per day, a tooltip per column on hover or focus,
- * and the same numbers as a table for screen readers. Overdue cards count on today.
+ * Cards falling due per day, today first (spec 09): one column per day with a tooltip on hover. The columns are
+ * hidden from assistive technology and not focusable; keyboard and screen-reader users get the same numbers as a
+ * table. Overdue cards count on today.
  */
 export default function ForecastChart({ days }: { days: ForecastDayDto[] }) {
   const [active, setActive] = useState<number | null>(null);
@@ -35,11 +43,8 @@ export default function ForecastChart({ days }: { days: ForecastDayDto[] }) {
           {days.map((day, i) => (
             <div
               key={day.date}
-              tabIndex={0}
               onMouseEnter={() => setActive(i)}
-              onFocus={() => setActive(i)}
-              onBlur={() => setActive(null)}
-              className="relative flex h-full flex-1 items-end justify-center outline-none focus-visible:bg-border/50"
+              className="relative flex h-full flex-1 items-end justify-center"
             >
               {day.count > 0 && (
                 <div
@@ -49,7 +54,9 @@ export default function ForecastChart({ days }: { days: ForecastDayDto[] }) {
                 />
               )}
               {active === i && (
-                <div className="pointer-events-none absolute bottom-full z-10 mb-1 whitespace-nowrap rounded border border-border bg-background px-2 py-1 text-xs shadow">
+                <div
+                  className={`pointer-events-none absolute bottom-full z-10 mb-1 whitespace-nowrap rounded border border-border bg-background px-2 py-1 text-xs shadow ${tooltipAnchor(i, days.length)}`}
+                >
                   {dayLabel(day.date, "long")}: {day.count} card{day.count === 1 ? "" : "s"}
                 </div>
               )}

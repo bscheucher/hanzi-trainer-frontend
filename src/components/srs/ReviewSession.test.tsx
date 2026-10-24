@@ -93,6 +93,16 @@ describe("ReviewSession", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("says the cards are still due when the session is ended early", async () => {
+    vi.mocked(api.getDueReviews).mockResolvedValueOnce([FRIEND]);
+    await renderSession();
+
+    fireEvent.click(screen.getByRole("button", { name: "End session" }));
+
+    expect(screen.getByRole("heading", { name: "Session ended" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("No cards reviewed; they are still due.");
+  });
+
   it("says so when nothing is due", async () => {
     vi.mocked(api.getDueReviews).mockResolvedValue([]);
     await renderSession();

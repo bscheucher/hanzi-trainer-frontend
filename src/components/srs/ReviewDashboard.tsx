@@ -1,18 +1,10 @@
 import Link from "next/link";
+import { CARD_STATE_LABELS, CARD_TYPE_LABELS } from "@/lib/cards";
 import type { CardState, CardType, ForecastDayDto, ReviewStatsDto } from "@/lib/types";
 import ForecastChart from "./ForecastChart";
 
-const STATES: { state: CardState; label: string }[] = [
-  { state: "NEW", label: "New" },
-  { state: "LEARNING", label: "Learning" },
-  { state: "REVIEW", label: "Review" },
-  { state: "RELEARNING", label: "Relearning" },
-];
-const TYPES: { type: CardType; label: string }[] = [
-  { type: "RECOGNITION", label: "Recognition" },
-  { type: "WRITING", label: "Writing" },
-  { type: "TONE", label: "Tones" },
-];
+const STATES = Object.keys(CARD_STATE_LABELS) as CardState[];
+const TYPES = Object.keys(CARD_TYPE_LABELS) as CardType[];
 
 /** The review dashboard (spec 09): headline counts, cards per state and type, the forecast, Start review. */
 export default function ReviewDashboard({ stats, forecast }: { stats: ReviewStatsDto; forecast: ForecastDayDto[] }) {
@@ -49,8 +41,8 @@ export default function ReviewDashboard({ stats, forecast }: { stats: ReviewStat
       </dl>
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <Counts title="Cards per state" rows={STATES.map((s) => ({ label: s.label, value: stats.byState[s.state] }))} />
-        <Counts title="Cards per type" rows={TYPES.map((t) => ({ label: t.label, value: stats.byType[t.type] }))} />
+        <Counts title="Cards per state" rows={STATES.map((s) => ({ label: CARD_STATE_LABELS[s], value: stats.byState[s] }))} />
+        <Counts title="Cards per type" rows={TYPES.map((t) => ({ label: CARD_TYPE_LABELS[t], value: stats.byType[t] }))} />
       </div>
 
       <ForecastChart days={forecast} />

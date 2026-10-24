@@ -153,7 +153,7 @@ function PracticeStep({
 }) {
   const answer = useCallback(
     (response: ExerciseResponse, durationMs: number) => {
-      if (exercise.id === null) return Promise.reject(new Error("Practice exercises are stored"));
+      if (exercise.id === null) return Promise.reject(new Error("This exercise cannot be graded. Start the session again."));
       return answerExercise(exercise.id, { response, durationMs });
     },
     [exercise.id],

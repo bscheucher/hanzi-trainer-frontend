@@ -29,6 +29,32 @@ describe("RatingButtons", () => {
     expect(onRate.mock.calls).toEqual([[4], [1], [2]]);
   });
 
+  it("focuses the suggestion and leaves Enter on another focused button to that button", () => {
+    const onRate = vi.fn();
+    render(<RatingButtons suggested={3} previews={PREVIEWS} disabled={false} onRate={onRate} />);
+    const hard = screen.getByRole("button", { name: "Hard, <6m" });
+
+    expect(screen.getByRole("button", { name: "Good (suggested), <10m" })).toHaveFocus();
+    hard.focus();
+    fireEvent.keyDown(hard, { key: "Enter" }); // the browser turns this into a click on Hard
+
+    expect(onRate).not.toHaveBeenCalled();
+  });
+
+  it("still accepts the suggestion with Enter when focus sits on a locked answer option", () => {
+    const onRate = vi.fn();
+    render(
+      <>
+        <button disabled>friend</button>
+        <RatingButtons suggested={4} previews={PREVIEWS} disabled={false} onRate={onRate} />
+      </>,
+    );
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "friend" }), { key: "Enter" });
+
+    expect(onRate).toHaveBeenCalledWith(4);
+  });
+
   it("ignores keys while disabled", () => {
     const onRate = vi.fn();
     render(<RatingButtons suggested={2} previews={PREVIEWS} disabled onRate={onRate} />);

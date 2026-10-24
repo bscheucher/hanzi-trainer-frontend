@@ -12,8 +12,9 @@ const STATS: ReviewStatsDto = {
   byState: { NEW: 9, LEARNING: 1, REVIEW: 5, RELEARNING: 0 },
   byType: { RECOGNITION: 5, WRITING: 5, TONE: 5 },
 };
+/** 30 consecutive days from Monday 5 January 2026, as the backend sends them. */
 const FORECAST: ForecastDayDto[] = Array.from({ length: 30 }, (_, i) => ({
-  date: `2026-01-${String(5 + i).padStart(2, "0")}`.replace(/-(3[2-9]|[4-9]\d)$/, "-31"),
+  date: new Date(Date.UTC(2026, 0, 5 + i)).toISOString().slice(0, 10),
   count: i === 0 ? 3 : i === 8 ? 1 : 0,
 }));
 
@@ -47,6 +48,7 @@ describe("ForecastChart", () => {
     render(<ForecastChart days={FORECAST} />);
 
     expect(screen.getAllByTestId("forecast-bar")).toHaveLength(2);
+    expect(document.querySelectorAll("[tabindex]")).toHaveLength(0); // no silent tab stops in the hidden chart
     expect(screen.getByText("4 cards")).toBeInTheDocument();
     fireEvent.mouseEnter(screen.getAllByTestId("forecast-bar")[0].parentElement!);
     expect(screen.getByText("Mon 5 Jan: 3 cards")).toBeInTheDocument();

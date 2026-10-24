@@ -13,7 +13,7 @@ export const RATINGS: { rating: Rating; label: string }[] = [
 
 /**
  * The four FSRS ratings with the interval each would schedule (spec 09). The suggested one is pre-selected;
- * keys 1–4 rate, Enter accepts the suggestion.
+ * keys 1–4 rate, Enter accepts the suggestion (it has focus; Enter on another focused button presses that one).
  */
 export default function RatingButtons({
   suggested,
@@ -31,6 +31,9 @@ export default function RatingButtons({
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === "Enter") {
+        // A focused button or link handles Enter itself (Tab to "Hard", Enter rates Hard); a locked option does not.
+        const control = e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement;
+        if (control && !(e.target as HTMLButtonElement).disabled) return;
         e.preventDefault();
         onRate(suggested);
       } else if (["1", "2", "3", "4"].includes(e.key)) {
@@ -51,6 +54,7 @@ export default function RatingButtons({
             key={rating}
             onClick={() => onRate(rating)}
             disabled={disabled}
+            autoFocus={isSuggested}
             aria-label={`${label}${isSuggested ? " (suggested)" : ""}, ${interval}`}
             aria-keyshortcuts={String(rating)}
             className={`flex flex-col items-center rounded border px-2 py-1.5 text-sm disabled:opacity-50 ${
